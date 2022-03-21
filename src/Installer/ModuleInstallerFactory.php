@@ -8,10 +8,10 @@ use Drupal\Core\Extension\ModuleInstaller;
 use Drupal\Core\File\FileSystem;
 use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\ConfigInstaller;
-use Drupal\Core\DependencyInjection\ClassResolver;
+use Drupal\Core\Config\InstallStorage;
+use Drupal\Core\Config\StorageInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Yaml\Yaml;
-use Vardot\Entity\EntityDefinitionUpdateManager;
 
 /**
  * Module Installer Factory.
@@ -24,42 +24,35 @@ class ModuleInstallerFactory {
    *
    * @var \Drupal\Core\Config\ConfigFactoryInterface
    */
-  protected $configFactory;
+  protected static $configFactory;
 
   /**
    * The module handler service.
    *
    * @var \Drupal\Core\Extension\ModuleHandler
    */
-  protected $moduleHandler;
+  protected static $moduleHandler;
 
   /**
    * The module installer service.
    *
    * @var \Drupal\Core\Extension\ModuleInstaller
    */
-  protected $moduleInstaller;
+  protected static $moduleInstaller;
 
   /**
    * The config installer seervice.
    *
    * @var \Drupal\Core\Config\ConfigInstaller
    */
-  protected $configInstaller;
+  protected static $configInstaller;
 
   /**
    * The file system service.
    *
    * @var \Drupal\Core\File\FileSystem
    */
-  protected $fileSystem;
-
-  /**
-   * The class resolver service.
-   *
-   * @var \Drupal\Core\DependencyInjection\ClassResolver
-   */
-  protected $classResolver;
+  protected static $fileSystem;
 
   /**
    * ModuleInstallerFactory constructor.
@@ -74,22 +67,19 @@ class ModuleInstallerFactory {
    *   The config installer service.
    * @param FileSystem $fileSystem
    *   The file system service.
-   * @param ClassResolver $classResolver
    */
   public function __construct(
     ConfigFactoryInterface $configFactory,
     ModuleHandler $moduleHandler,
     ModuleInstaller $moduleInstaller,
     ConfigInstaller $configInstaller,
-    FileSystem $fileSystem,
-    ClassResolver $classResolver)
+    FileSystem $fileSystem)
   {
-    $this->configFactory = $configFactory;
-    $this->moduleHandler = $moduleHandler;
-    $this->moduleInstaller = $moduleInstaller;
-    $this->configInstaller = $configInstaller;
-    $this->fileSystem = $fileSystem;
-    $this->classResolver = $classResolver;
+    self::$configFactory = $configFactory;
+    self::$moduleHandler = $moduleHandler;
+    self::$moduleInstaller = $moduleInstaller;
+    self::$configInstaller = $configInstaller;
+    self::$fileSystem = $fileSystem;
   }
 
   /**
@@ -102,92 +92,69 @@ class ModuleInstallerFactory {
       $container->get('module_installer'),
       $container->get('config.installer'),
       $container->get('file_system'),
-      $container->get('class_resolver')
     );
   }
 
   /**
-   * Applies all the detected valid changes.
+   * Install a list of modules inside [$moduleName].info.yml
    *
    * @param string $moduleName
+   * @param string $modulesList
    * @param bool $setModuleWeight
+   * @return void
    */
-  public function install(string $moduleName, $setModuleWeight = TRUE) {
-    $modulePath = $this->getModulePath($moduleName);
+  public static function installList(string $moduleName, string $modulesList, $setModuleWeight = TRUE) {
+    $modulePath = self::$moduleHandler->getModule($moduleName)->getPath();
 
     // Processer for install: in [$module_name].info.yml file.
     // ------------------------------------------------------------------------.
     $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
     if (file_exists($moduleInfoFile)) {
       $moduleInfoData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-      $moduleInstallData = $moduleInfoData['install'];
+      $moduleInstallData = $moduleInfoData[$modulesList];
       if (isset($moduleInstallData) && is_array($moduleInstallData)) {
         foreach ($moduleInstallData as $module) {
-          if ($this->moduleHandler->moduleExists($module)) {
-            $this->moduleInstaller->install([$module], TRUE);
+          if (self::$moduleHandler->moduleExists($module)) {
+            self::$moduleInstaller->install([$module], TRUE);
           }
         }
       }
     }
 
     if ($setModuleWeight) {
-      $this->setModuleWeightAfterInstallation($moduleName);
+      self::setModuleWeightAfterInstallation($moduleName, $modulesList);
     }
   }
 
-  public function installConfig($moduleName, string $configDirectory = "optional") {
-    $modulePath = $this->getModulePath($moduleName);
-    $installPath = str_replace("config/", "", $configDirectory);
-    $configPath = "{$modulePath}/config/{$installPath}";
+  /**
+   * Import configuration from scaned directory.
+   *
+   * @param string $moduleName
+   * @param string $mask
+   * @param string $configDirectory
+   * @return void
+   */
+  public static function importConfigsFromScanedDirectory(string $moduleName, string $mask, string $configDirectory = InstallStorage::CONFIG_OPTIONAL_DIRECTORY) {
+    $modulePath = self::$moduleHandler->getModule($moduleName)->getPath();
+    $configPath = "{$modulePath}/{$configDirectory}";
 
     if (is_dir($configPath)) {
-      $this->configInstaller->installDefaultConfig('module', $moduleName);
-
-      // Create field storage configs first in active config.
-      $storageConfigFiles = $this->fileSystem->scanDirectory($configPath, '/^field.storage.*\\.(yml)$/i');
-      if (isset($storageConfigFiles)  && is_array($storageConfigFiles)) {
-        foreach ($storageConfigFiles as $storageConfigFile) {
-          $storageConfigFileContent = file_get_contents(DRUPAL_ROOT . '/' . $storageConfigFile->uri);
-          $storageConfigFileData = (array) Yaml::parse($storageConfigFileContent);
-          $configFactory = $this->configFactory->getEditable($storageConfigFile->name);
-          $configFactory->setData($storageConfigFileData)->save(TRUE);
-        }
-      }
+      self::$configInstaller->installDefaultConfig('module', $moduleName);
 
       // Install any optional config the module provides.
       $storage = new FileStorage($configPath, StorageInterface::DEFAULT_COLLECTION);
-      $this->configInstaller->installOptionalConfig($storage, '');
+      self::$configInstaller->installOptionalConfig($storage, '');
 
-      // Have the .settings.yml configs into the active config.
-      $settingsConfigFiles = $this->fileSystem->scanDirectory($configPath, '/^.*(settings.yml)$/i');
-      if(isset($settingsConfigFiles) && is_array($settingsConfigFiles)) {
-        foreach ($settingsConfigFiles as $settingsConfigFile) {
-          $settingsConfigFileContent = file_get_contents(DRUPAL_ROOT . '/' . $settingsConfigFile->uri);
-          $settingsConfigFileData = (array) Yaml::parse($settingsConfigFileContent);
-          $configFactory = $this->configFactory->getEditable($settingsConfigFile->name);
-          $configFactory->setData($settingsConfigFileData)->save(TRUE);
+      // Create field storage configs first in active config.
+      $configFiles = self::$fileSystem->scanDirectory($configPath, $mask);
+      if (isset($configFiles)  && is_array($configFiles)) {
+        foreach ($configFiles as $configFile) {
+          $configFileContent = file_get_contents(DRUPAL_ROOT . '/' . $configFile->uri);
+          $configFileData = (array) Yaml::parse($configFileContent);
+          $configFactory = self::$configFactory->getEditable($configFile->name);
+          $configFactory->setData($configFileData)->save(TRUE);
         }
       }
-    }
-
-    // ---------------------------------------------------------------------------
-    // Entity updates to clear up any mismatched entity and/or field definitions
-    // And Fix changes were detected in the entity type and field definitions.
-    $this->classResolver
-    ->getInstanceFromDefinition(EntityDefinitionUpdateManager::class)
-    ->applyUpdates();
-
-    // Have forced configs import after the entity and definitions updates.
-    $forcedConfigsImportAfterEntityUpdates = [
-      'core.entity_form_display.user.user.default',
-    ];
-
-    foreach ($forcedConfigsImportAfterEntityUpdates as $configName) {
-      $configPath = "{$configPath}/{$configName}.yml";
-      $configContent = file_get_contents($configPath);
-      $configData = (array) Yaml::parse($configContent);
-      $configFactory = $this->configFactory->getEditable($configName);
-      $configFactory->setData($configData)->save(TRUE);
     }
   }
 
@@ -195,48 +162,62 @@ class ModuleInstallerFactory {
    * Get module weight and set it at the end of the list of modules installed by it.
    *
    * @param string $moduleName
+   * @param array $modules
    * @return void
    */
-  function setModuleWeightAfterInstallation(string $moduleName) {
+  public static function setModuleWeightAfterInstallation(string $moduleName, string $modulesList, array $modules = []) {
     // get all modules from core.extension
-    $installed_modules = (array) $this->configFactory->getEditable('core.extension')->get('module');
-    // get weight of varbase security
-    $varbase_security_weight = $installed_modules['varbase_security'];
-    // get all modules installed by varbase security
-    $varbase_security_modules = (array) Yaml::parse(file_get_contents($moduleName))['install'];
-    // empty array to put all modules weight [modules installed by varbase security]
-    $varase_security_modules_weight = [];
+    $installedModules = (array) self::$configFactory->getEditable('core.extension')->get('module');
 
-    foreach ($installed_modules as $module => $weight) {
-      foreach ($varbase_security_modules as $vs_module_key => $vs_module_name) {
-        if ($module === $vs_module_name) {
-          $varase_security_modules_weight += [$module => $weight];
+    if (count($modules) > 0) {
+
+      // empty array to put all modules weight [$modules]
+      $modulesWeight = [];
+
+      // Loop over all the installed modules and in modules added using this function [array $modules].
+      // And get the weight of all modules inside [array $modules], then store it in $modulesWeight.
+      foreach ($installedModules as $module => $weight) {
+        foreach ($modules as $moduleKey => $module_name) {
+          if ($module === $module_name) {
+            $modulesWeight += [$module => $weight];
+          }
         }
       }
+
+      // Get max weight of modules installed by module.
+      $maxWeight = max($modulesWeight);
+
+      // Set [$moduleName] weight to be grater than higher one by 1.
+      module_set_weight($moduleName, $maxWeight + 1);
     }
 
-    // Get max weight of modules installed by varbase_security.
-    $max_wight = max($varase_security_modules_weight);
+    if(count($modules) === 0) {
+      $modulePath = self::$moduleHandler->getModule($moduleName)->getPath();
+      $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
 
-    /**
-     * Set varbase_security weight to be grater than higher one by 1 if it's
-     * less than or equal to max.
-     */
-    if ($varbase_security_weight <= $max_wight) {
-      module_set_weight('varbase_security', $max_wight + 1);
+      if (file_exists($moduleInfoFile)) {
+        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
+        $modules = $infoFileData[$modulesList];
+
+        $modulesWeight = [];
+
+        // Loop over all the installed modules and in modules added using this function [array $modules].
+        // And get the weight of all modules inside [array $modules], then store it in $modulesWeight.
+        foreach ($installedModules as $module => $weight) {
+          foreach ($modules as $moduleKey => $module_name) {
+            if ($module === $module_name) {
+              $modulesWeight += [$module => $weight];
+            }
+          }
+        }
+
+        // Get max weight of modules installed by module.
+        $maxWeight = max($modulesWeight);
+
+        // Set [$moduleName] weight to be grater than higher one by 1.
+        module_set_weight($moduleName, $maxWeight + 1);
+      }
     }
-
-    module_set_weight('varbase_security', $max_wight + 1);
-  }
-
-  /**
-   * Get module path function
-   *
-   * @param string $moduleName
-   * @return void
-   */
-  private function getModulePath(string $moduleName) {
-    return $modulePath = $this->moduleHandler->getModule($moduleName)->getPath();
   }
 }
 
