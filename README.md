@@ -53,35 +53,3 @@ use Vardot\Installer\ModuleInstallerFactory;
   ModuleInstallerFactory::importConfigsFromScanedDirectory('moduleName', 'mask', 'configDirectory');
   ModuleInstallerFactory::setModuleWeightAfterInstallation('mdouleName', 'modulesListKey', []);
 ```
-
-### Explanation about methods and its parameters:
-
-* `installList('mdouleName', 'modulesListKey', TRUE)`:
-
-This method is for installing a list of modules listed in `module_name.info.yml`.
-
-params:
-
-  * `'moduleName'`: a string represent the machine name of a module.
-  * `'modulesListKey'`: a string represent the key of the modules list in `module_name.info.yml`, like `- install` in the example above, and by default it will be `install`.
-  * `TRUE`: a flag to call `setModuleWeightAfterInstallation()` method.
-
-* `importConfigsFromScanedDirectory('moduleName', 'mask', 'configDirectory')`:
-
-This method is for installing configuration of the module in specific directory.
-
-params:
-
-  * `'moduleName'`: a string represent the machine name of a module.
-  * `'mask'`: a string represents regex of a files extension.
-  * `'configDirectory'`: the directory of configuration, and by default it will be `'config/optional'`.
-
-* `setModuleWeightAfterInstallation('mdouleName', 'modulesListKey', [])`:
-
-This method is for change the weight of the module to be grater than all modules in the list.
-
-params:
-
-  * `'moduleName'`: a string represent the machine name of a module.
-  * `'modulesListKey'`: a string represent the key of the modules list in `module_name.info.yml`, like `- install` in the example above, and by default it will be `install`.
-  * `array $modules`: this array will contain all modules names that you want to make your module weight grater that it.
