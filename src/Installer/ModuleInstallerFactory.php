@@ -85,16 +85,27 @@ class ModuleInstallerFactory {
    * @return void
    */
   public static function setModuleWeightAfterInstallation(string $moduleName, string $modulesListKey = "install", array $modules = []) {
-    // get all modules from core.extension
-    $installedModules = (array) \Drupal::service('config.factory')->getEditable('core.extension')->get('module');
+
+    if (count($modules) === 0) {
+      $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
+      $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
+
+      if (file_exists($moduleInfoFile)) {
+        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
+        $modules = $infoFileData[$modulesListKey];
+      }
+    }
 
     if (count($modules) > 0) {
+      // get all modules from core.extension
+      $installedModules = (array) \Drupal::service('config.factory')->getEditable('core.extension')->get('module');
 
       // empty array to store all modules weight [$modules]
       $modulesWeight = [];
 
       // Loop over all the installed modules and in modules added using this function [array $modules].
       // And get the weight of all modules inside [array $modules], then store it in $modulesWeight.
+
       foreach ($installedModules as $module => $weight) {
         foreach ($modules as $moduleKey => $module_name) {
           if ($module === $module_name) {
@@ -106,33 +117,7 @@ class ModuleInstallerFactory {
       // Get max weight of modules installed by module.
       $maxWeight = max($modulesWeight);
 
-      // Set [$moduleName] weight to be grater than higher one by 1.
-      module_set_weight($moduleName, $maxWeight + 1);
-    }
-
-    if(count($modules) === 0) {
-      $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
-      $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
-
-      if (file_exists($moduleInfoFile)) {
-        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-        $modules = $infoFileData[$modulesListKey];
-
-        $modulesWeight = [];
-
-        // Loop over all the installed modules and in modules added using this function [array $modules].
-        // And get the weight of all modules inside [array $modules], then store it in $modulesWeight.
-        foreach ($installedModules as $module => $weight) {
-          foreach ($modules as $moduleKey => $module_name) {
-            if ($module === $module_name) {
-              $modulesWeight += [$module => $weight];
-            }
-          }
-        }
-
-        // Get max weight of modules installed by module.
-        $maxWeight = max($modulesWeight);
-
+      if (function_exists('module_set_weight')) {
         // Set [$moduleName] weight to be grater than higher one by 1.
         module_set_weight($moduleName, $maxWeight + 1);
       }
