@@ -109,7 +109,7 @@ class ModuleInstallerFactory {
       foreach ($installedModules as $module => $weight) {
         foreach ($modules as $moduleKey => $module_name) {
           if ($module === $module_name) {
-            $modulesWeight += [$module => $weight];
+            array_push($modulesWeight, $weight);
           }
         }
       }
@@ -124,4 +124,3 @@ class ModuleInstallerFactory {
     }
   }
 }
-
