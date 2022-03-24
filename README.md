@@ -47,9 +47,11 @@ use Vardot\Installer\ModuleInstallerFactory;
 ```
 
 ### 3. Use the following methods in your custom install events
+For example:
 
 ```
-  ModuleInstallerFactory::installList('mdouleName', 'modulesListKey', TRUE);
-  ModuleInstallerFactory::importConfigsFromScanedDirectory('moduleName', 'mask', 'configDirectory');
-  ModuleInstallerFactory::setModuleWeightAfterInstallation('mdouleName', 'modulesListKey', []);
+  ModuleInstallerFactory::installList('varbase_core', 'install', TRUE);
+  ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_core', '/^field.storage.*\\.(yml)$/i', 'config/optional');
+  ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install', []);
 ```
+
