@@ -21,26 +21,53 @@ class ModuleInstallerFactory {
    * @param bool $setModuleWeight
    * @return void
    */
-  public static function installList(string $moduleName, string $modulesListKey = "install", $setModuleWeight = TRUE) {
+  public static function installList(string $moduleName, string $modulesListKey = 'install', $setModuleWeight = TRUE) {
     $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
 
-    // Processer for install: in [$module_name].info.yml file.
-    // ------------------------------------------------------------------------.
-    $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
+    $moduleInfoFile = $modulePath . '/' . $moduleName . '.info.yml';
     if (file_exists($moduleInfoFile)) {
-      $moduleInfoData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-      $moduleInstallData = $moduleInfoData[$modulesListKey];
-      if (isset($moduleInstallData) && is_array($moduleInstallData)) {
-        foreach ($moduleInstallData as $module) {
-          if (\Drupal::service('module_handler')->moduleExists($module)) {
+      $module_info_data = (array) Yaml::parse(file_get_contents($moduleInfoFile));
+      if (
+        isset($module_info_data[$modulesListKey])
+        && is_array($module_info_data[$modulesListKey])
+      ) {
+        foreach ($module_info_data[$modulesListKey] as $module) {
+          if (!\Drupal::moduleHandler()->moduleExists($module)) {
             \Drupal::service('module_installer')->install([$module], TRUE);
           }
+        }
+
+        self::setModuleWeightAfterInstallation($moduleName);
+      }
+    }
+  }
+
+  public static function setModuleWeightAfterInstallation(string $moduleName, string $modulesListKey = 'install', $modules = []) {
+    if (empty($modules)) {
+      $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
+      $moduleInfoFile = $modulePath . '/' . $moduleName . '.info.yml';
+
+      if (file_exists($moduleInfoFile)) {
+        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
+        $modules = $infoFileData[$modulesListKey];
+      }
+    }
+
+    $installedModules = (array) \Drupal::service('config.factory')->getEditable('core.extension')->get('module');
+    $modulesWeight = [];
+
+    foreach ($installedModules as $module => $weight) {
+      foreach ($modules as $key => $name) {
+        if ($module === $name) {
+          array_push($modulesWeight, $weight);
         }
       }
     }
 
-    if ($setModuleWeight) {
-      self::setModuleWeightAfterInstallation($moduleName, $modulesListKey);
+    $newWeight = max($modulesWeight) + 1;
+
+    if (function_exists('module_set_weight')) {
+      module_set_weight($moduleName, $newWeight);
     }
   }
 
@@ -72,54 +99,6 @@ class ModuleInstallerFactory {
           $configFactory = \Drupal::service('config.factory')->getEditable($configFile->name);
           $configFactory->setData($configFileData)->save(TRUE);
         }
-      }
-    }
-  }
-
-  /**
-   * Get module weight and set it at the end of the list of modules installed by it.
-   *
-   * @param string $moduleName
-   * @param string $modulesListKey
-   * @param array $modules
-   * @return void
-   */
-  public static function setModuleWeightAfterInstallation(string $moduleName, string $modulesListKey = "install", array $modules = []) {
-
-    if (count($modules) === 0) {
-      $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
-      $moduleInfoFile = "{$modulePath}/{$moduleName}.info.yml";
-
-      if (file_exists($moduleInfoFile)) {
-        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-        $modules = $infoFileData[$modulesListKey];
-      }
-    }
-
-    if (count($modules) > 0) {
-      // get all modules from core.extension
-      $installedModules = (array) \Drupal::service('config.factory')->getEditable('core.extension')->get('module');
-
-      // empty array to store all modules weight [$modules]
-      $modulesWeight = [];
-
-      // Loop over all the installed modules and in modules added using this function [array $modules].
-      // And get the weight of all modules inside [array $modules], then store it in $modulesWeight.
-
-      foreach ($installedModules as $module => $weight) {
-        foreach ($modules as $moduleKey => $module_name) {
-          if ($module === $module_name) {
-            array_push($modulesWeight, $weight);
-          }
-        }
-      }
-
-      // Get max weight of modules installed by module.
-      $maxWeight = max($modulesWeight);
-
-      if (function_exists('module_set_weight')) {
-        // Set [$moduleName] weight to be grater than higher one by 1.
-        module_set_weight($moduleName, $maxWeight + 1);
       }
     }
   }
