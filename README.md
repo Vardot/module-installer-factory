@@ -57,9 +57,9 @@ Install the list of module in the varbase_core.info.yml
 ```
 
 #### Arguments:
-* String **$moduleName:** The machine name for the module.
-* String **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
-* Boolan **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
+* `String` **$moduleName:** The machine name for the module.
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
+* `Boolean` **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
 
 which equivalent to:
 ```
@@ -67,17 +67,17 @@ which equivalent to:
 ```
 
 ### Set the weight of the module after installation of list of modules.
-To make sure that any hook or event subscriber workes after all used modules.
+To make sure that any hook or event subscriber works after all used modules.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install');
 ```
 #### Arguments:
-* String **$moduleName:** The machine name for the module.
-* String **$modulesListKey:** Optional list key which to get the list of modules from. Default 
-* Array **$modules:** Optional list of modules in an array.
+* `String` **$moduleName:** The machine name for the module.
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 
+* `Array` **$modules:** Optional list of modules in an array.
 
 To set the weight of the module after listed modules with a selected set of modules
-for exmaple: 
+for example: 
 If the `varbase_core.info.yml` file had
 ```
 set_weight_after:
@@ -85,7 +85,7 @@ set_weight_after:
   - token
   - block_class
 ```
-even tho if the mdoule did not enable them.
+even tho if the module did not enable them.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'set_weight_after');
 ```
@@ -117,9 +117,9 @@ At this point any hook or event subscriber will be processed after the listed mo
   'config/managed');
 ```
 #### Arguments:
-* String **$moduleName:** The machine name for the module.
-* Array **$listOfConfigFiles:** The list of config files.
-* String **$configDirectory:** The config directory which to partial import the list from.
+* `String` **$moduleName:** The machine name for the module.
+* `Array` **$listOfConfigFiles:** The list of config files.
+* `String` **$configDirectory:** The config directory which to partial import the list from.
 
 It could be used in some cases to change the default View for the Content or People with multilingual sites or extra filters by other modules.
 It is important which managing the `Assemble components and install` installation step.
