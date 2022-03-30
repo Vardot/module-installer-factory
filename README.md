@@ -49,7 +49,7 @@ Add the following name space at in custom modules or custom installation profile
 use Vardot\Installer\ModuleInstallerFactory;
 ```
 
-## 3. Use the following methods in your custom install events
+## Use the following methods in your custom install events
 ### Install a list of modules inside [$moduleName].info.yml
 Install the list of module in the varbase_core.info.yml
 ```
@@ -66,7 +66,7 @@ which equivalent to:
   ModuleInstallerFactory::installList('varbase_core', 'install', TRUE);
 ```
 
-### Set the weight of the module after installation of list of modules.
+## Set the weight of the module after installation of list of modules
 To make sure that any hook or event subscriber works after all used modules.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install');
@@ -95,7 +95,7 @@ or can be passed as an array as follows:
 ```
 At this point any hook or event subscriber will be processed after the listed modules.
 
-### Import configuration from scaned directory.
+## Import configuration from scaned directory
 **Example 1:** Import all field storage configs
 ```
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_core', '/^field.storage.*\\.(yml)$/i', 'config/optional');
@@ -106,7 +106,7 @@ At this point any hook or event subscriber will be processed after the listed mo
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_security', '/^.*(settings.yml)$/i', 'config/managed');
 ```
 
-### Import configuration from array list of config files.
+## Import configuration from array list of config files
 **Example 1:**
 ```
   ModuleInstallerFactory::importConfigsFromList('varbase_admin', 
