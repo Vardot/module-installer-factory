@@ -56,7 +56,7 @@ Install the list of module in the varbase_core.info.yml
   ModuleInstallerFactory::installList('varbase_core');
 ```
 
-#### Paramerters are:
+#### Arguments:
 * String **$moduleName:** The machine name for the module.
 * String **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
 * Boolan **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
@@ -71,7 +71,7 @@ To make sure that any hook or event subscriber workes after all used modules.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install');
 ```
-#### Paramerters are:
+#### Arguments:
 * String **$moduleName:** The machine name for the module.
 * String **$modulesListKey:** Optional list key which to get the list of modules from. Default 
 * Array **$modules:** Optional list of modules in an array.
@@ -107,10 +107,6 @@ At this point any hook or event subscriber will be processed after the listed mo
 ```
 
 ### Import configuration from array list of config files.
-* String **$moduleName:** The machine name for the module.
-* Array **$listOfConfigFiles:** The list of config files.
-* String **$configDirectory:** The config directory which to partial import the list from.
-
 **Example 1:**
 ```
   ModuleInstallerFactory::importConfigsFromList('varbase_admin', 
@@ -120,6 +116,11 @@ At this point any hook or event subscriber will be processed after the listed mo
   ],
   'config/managed');
 ```
+#### Arguments:
+* String **$moduleName:** The machine name for the module.
+* Array **$listOfConfigFiles:** The list of config files.
+* String **$configDirectory:** The config directory which to partial import the list from.
+
 It could be used in some cases to change the default View for the Content or People with multilingual sites or extra filters by other modules.
 It is important which managing the `Assemble components and install` installation step.
 
