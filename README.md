@@ -49,35 +49,35 @@ Add the following name space at in custom modules or custom installation profile
 use Vardot\Installer\ModuleInstallerFactory;
 ```
 
-## 3. Use the following methods in your custom install events
+## Use the following methods in your custom install events
 ### Install a list of modules inside [$moduleName].info.yml
 Install the list of module in the varbase_core.info.yml
 ```
   ModuleInstallerFactory::installList('varbase_core');
 ```
 
-#### Paramerters are:
-* String **$moduleName:** The machine name for the module.
-* String **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
-* Boolan **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
+#### Arguments:
+* `String` **$moduleName:** The machine name for the module.
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
+* `Boolean` **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
 
 which equivalent to:
 ```
   ModuleInstallerFactory::installList('varbase_core', 'install', TRUE);
 ```
 
-### Set the weight of the module after installation of list of modules.
-To make sure that any hook or event subscriber workes after all used modules.
+## Set the weight of the module after installation of list of modules
+To make sure that any hook or event subscriber works after all used modules.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install');
 ```
-#### Paramerters are:
-* String **$moduleName:** The machine name for the module.
-* String **$modulesListKey:** Optional list key which to get the list of modules from. Default 
-* Array **$modules:** Optional list of modules in an array.
+#### Arguments:
+* `String` **$moduleName:** The machine name for the module.
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 
+* `Array` **$modules:** Optional list of modules in an array.
 
 To set the weight of the module after listed modules with a selected set of modules
-for exmaple: 
+for example: 
 If the `varbase_core.info.yml` file had
 ```
 set_weight_after:
@@ -85,7 +85,7 @@ set_weight_after:
   - token
   - block_class
 ```
-even tho if the mdoule did not enable them.
+even tho if the module did not enable them.
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'set_weight_after');
 ```
@@ -95,7 +95,7 @@ or can be passed as an array as follows:
 ```
 At this point any hook or event subscriber will be processed after the listed modules.
 
-### Import configuration from scaned directory.
+## Import configuration from scaned directory
 **Example 1:** Import all field storage configs
 ```
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_core', '/^field.storage.*\\.(yml)$/i', 'config/optional');
@@ -106,11 +106,7 @@ At this point any hook or event subscriber will be processed after the listed mo
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_security', '/^.*(settings.yml)$/i', 'config/managed');
 ```
 
-### Import configuration from array list of config files.
-* String **$moduleName:** The machine name for the module.
-* Array **$listOfConfigFiles:** The list of config files.
-* String **$configDirectory:** The config directory which to partial import the list from.
-
+## Import configuration from array list of config files
 **Example 1:**
 ```
   ModuleInstallerFactory::importConfigsFromList('varbase_admin', 
@@ -120,6 +116,11 @@ At this point any hook or event subscriber will be processed after the listed mo
   ],
   'config/managed');
 ```
+#### Arguments:
+* `String` **$moduleName:** The machine name for the module.
+* `Array` **$listOfConfigFiles:** The list of config files.
+* `String` **$configDirectory:** The config directory which to partial import the list from.
+
 It could be used in some cases to change the default View for the Content or People with multilingual sites or extra filters by other modules.
 It is important which managing the `Assemble components and install` installation step.
 
