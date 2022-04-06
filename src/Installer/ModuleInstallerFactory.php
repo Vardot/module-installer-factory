@@ -26,15 +26,15 @@ class ModuleInstallerFactory {
    */
   public static function installList(string $moduleName, string $modulesListKey = 'install', $setModuleWeight = TRUE) {
     $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
-
     $moduleInfoFile = $modulePath . '/' . $moduleName . '.info.yml';
+
     if (file_exists($moduleInfoFile)) {
-      $module_info_data = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-      if (
-        isset($module_info_data[$modulesListKey])
-        && is_array($module_info_data[$modulesListKey])
-      ) {
-        foreach ($module_info_data[$modulesListKey] as $module) {
+      $moduleInfoFileContent = file_get_contents($moduleInfoFile);
+      $moduleInfoData = (array) Yaml::parse($moduleInfoFileContent);
+      if (isset($moduleInfoData[$modulesListKey])
+          && is_array($moduleInfoData[$modulesListKey])) {
+
+        foreach ($moduleInfoData[$modulesListKey] as $module) {
           if (!\Drupal::moduleHandler()->moduleExists($module)) {
             \Drupal::service('module_installer')->install([$module], TRUE);
           }
@@ -64,8 +64,11 @@ class ModuleInstallerFactory {
       $moduleInfoFile = $modulePath . '/' . $moduleName . '.info.yml';
 
       if (file_exists($moduleInfoFile)) {
-        $infoFileData = (array) Yaml::parse(file_get_contents($moduleInfoFile));
-        $modules = $infoFileData[$modulesListKey];
+        $moduleInfoFileContent = file_get_contents($moduleInfoFile);
+        $infoFileData = (array) Yaml::parse($moduleInfoFileContent);
+        if (isset($infoFileData[$modulesListKey])) {
+          $modules = $infoFileData[$modulesListKey];
+        }
       }
     }
 
@@ -101,23 +104,26 @@ class ModuleInstallerFactory {
    */
   public static function importConfigsFromScanedDirectory(string $moduleName, string $mask, string $configDirectory = InstallStorage::CONFIG_OPTIONAL_DIRECTORY) {
     $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
-    $configPath = "{$modulePath}/{$configDirectory}";
+    $configDirectoryPath = $modulePath . '/' . $configDirectory;
 
-    if (is_dir($configPath)) {
+    if (is_dir($configDirectoryPath)) {
       \Drupal::service('config.installer')->installDefaultConfig('module', $moduleName);
 
       // Install any optional config the module provides.
-      $storage = new FileStorage($configPath, StorageInterface::DEFAULT_COLLECTION);
+      $storage = new FileStorage($configDirectoryPath, StorageInterface::DEFAULT_COLLECTION);
       \Drupal::service('config.installer')->installOptionalConfig($storage, '');
 
       // Create field storage configs first in active config.
-      $configFiles = \Drupal::service('file_system')->scanDirectory($configPath, $mask);
+      $configFiles = \Drupal::service('file_system')->scanDirectory($configDirectoryPath, $mask);
       if (isset($configFiles)  && is_array($configFiles)) {
         foreach ($configFiles as $configFile) {
-          $configFileContent = file_get_contents(DRUPAL_ROOT . '/' . $configFile->uri);
-          $configFileData = (array) Yaml::parse($configFileContent);
-          $configFactory = \Drupal::service('config.factory')->getEditable($configFile->name);
-          $configFactory->setData($configFileData)->save(TRUE);
+          $configImportFile = DRUPAL_ROOT . '/' . $configFile->uri;
+          if (file_exists($configImportFile)) {
+            $configFileContent = file_get_contents($configImportFile);
+            $configFileData = (array) Yaml::parse($configFileContent);
+            $configFactory = \Drupal::service('config.factory')->getEditable($configFile->name);
+            $configFactory->setData($configFileData)->save(TRUE);
+          }
         }
       }
     }
@@ -136,15 +142,17 @@ class ModuleInstallerFactory {
    */
   public static function importConfigsFromList(string $moduleName, array $listOfConfigFiles, string $configDirectory = InstallStorage::CONFIG_OPTIONAL_DIRECTORY) {
     $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
-    $configPath = "{$modulePath}/{$configDirectory}";
+    $configDirectoryPath = $modulePath . '/' . $configDirectory;
 
-    if (is_dir($configPath)) {
+    if (is_dir($configDirectoryPath)) {
       foreach ($listOfConfigFiles as $configName) {
-        $configPath = $configPath . '/' . $configName . '.yml';
-        $configContent = file_get_contents($configPath);
-        $configData = (array) Yaml::parse($configContent);
-        $configFactory = \Drupal::configFactory()->getEditable($configName);
-        $configFactory->setData($configData)->save(TRUE);
+        $configFile = $configDirectoryPath . '/' . $configName . '.yml';
+        if (file_exists($configFile)) {
+          $configContent = file_get_contents($configFile);
+          $configData = (array) Yaml::parse($configContent);
+          $configFactory = \Drupal::configFactory()->getEditable($configName);
+          $configFactory->setData($configData)->save(TRUE);
+        }
       }
     }
   }
