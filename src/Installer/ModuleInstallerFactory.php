@@ -83,10 +83,12 @@ class ModuleInstallerFactory {
       }
     }
 
-    $newWeight = max($modulesWeight) + 1;
+    if (count($modulesWeight) > 0)
+      $newWeight = max($modulesWeight) + 1;
 
-    if (function_exists('module_set_weight')) {
-      module_set_weight($moduleName, $newWeight);
+      if (function_exists('module_set_weight')) {
+        module_set_weight($moduleName, $newWeight);
+      }
     }
   }
 
