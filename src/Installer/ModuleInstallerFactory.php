@@ -40,7 +40,9 @@ class ModuleInstallerFactory {
           }
         }
 
-        self::setModuleWeightAfterInstallation($moduleName);
+        if ($setModuleWeight) {
+          self::setModuleWeightAfterInstallation($moduleName);
+        }
       }
     }
   }
