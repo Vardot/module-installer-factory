@@ -1,4 +1,4 @@
-# Module Installer Factory
+# Module Installer Factory Class
 
 Provides developers with a class for modules installer factory.
 
@@ -22,12 +22,11 @@ install:
   - anchor_link
 ```
 
-So that the installed modules could be disabled in some project without the need to disable the used module.
+So that the installed modules could be disabled in some projects without the need to disable the used module.
 
-It's install only not a dependency.
+It's installed only not a dependency.
 
-
-# How to use Module Installer Factory Class
+## How to use the Module Installer Factory Class
 
 ## 1. Require the Package in your root composer.json file
 
@@ -35,7 +34,7 @@ It's install only not a dependency.
   "vardot/module-installer-factory": "~1.0"
 ```
 
-## Or require the Package in your Project with a command
+Or require the Package in your Project with a command
 
 ```
 $ composer require vardot/module-installer-factory:~1.0
@@ -43,71 +42,89 @@ $ composer require vardot/module-installer-factory:~1.0
 
 ## 2. Add Needed Namespace
 
-Add the following name space at in custom modules or custom installation profiles.
+Add the following namespace in custom modules or custom installation profiles.
 
 ```
 use Vardot\Installer\ModuleInstallerFactory;
 ```
 
 ## Use the following methods in your custom install events
-### Install a list of modules inside [$moduleName].info.yml
-Install the list of module in the varbase_core.info.yml
+
+### Install a list of modules
+
+Install the list of module in the varbase\_core.info.yml
+
 ```
   ModuleInstallerFactory::installList('varbase_core');
 ```
 
-#### Arguments:
-* `String` **$moduleName:** The machine name for the module.
-* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when_module_name_enabled)
-* `Boolean` **$setModuleWeight:** A flag to auto set the weight of the module after installation of list of modules.
+### **Arguments for** installList method**:**
 
-which equivalent to:
+* `String` **$moduleName:** The machine name for the module.
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 'install'. It can be changed on managed cases like (managed, when\_module\_name\_enabled)
+* `Boolean` **$setModuleWeight:** A flag to auto set the weight of the module after installation of a list of modules.
+
+which is equivalent to:
+
 ```
   ModuleInstallerFactory::installList('varbase_core', 'install', TRUE);
 ```
 
-## Set the weight of the module after installation of list of modules
+### Set the weight of the module after installation of the list of modules
+
 To make sure that any hook or event subscriber works after all used modules.
+
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'install');
 ```
-#### Arguments:
+
+### **Arguments for** setModuleWeightAfterInstallation**:**
+
 * `String` **$moduleName:** The machine name for the module.
-* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default 
+* `String` **$modulesListKey:** Optional list key which to get the list of modules from. Default
 * `Array` **$modules:** Optional list of modules in an array.
 
-To set the weight of the module after listed modules with a selected set of modules
-for example: 
-If the `varbase_core.info.yml` file had
+To set the weight of the module after listed modules with a selected set of modules for example: If the `varbase_core.info.yml` file had
+
 ```
 set_weight_after:
   - ctools
   - token
   - block_class
 ```
+
 even tho if the module did not enable them.
+
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', 'set_weight_after');
 ```
+
 or can be passed as an array as follows:
+
 ```
   ModuleInstallerFactory::setModuleWeightAfterInstallation('varbase_core', '', ['ctools', 'token', 'block_class']);
 ```
+
 At this point any hook or event subscriber will be processed after the listed modules.
 
-## Import configuration from scaned directory
-**Example 1:** Import all field storage configs
+### Import configuration from scaned directory
+
+### **Example 1:** Import all field storage configs
+
 ```
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_core', '/^field.storage.*\\.(yml)$/i', 'config/optional');
 ```
 
-**Example 2:** Import all custom settings file from a managed folder in the module.
+### **Example 2:** Import all custom settings files from a managed folder in the module.
+
 ```
   ModuleInstallerFactory::importConfigsFromScanedDirectory('varbase_security', '/^.*(settings.yml)$/i', 'config/managed');
 ```
 
-## Import configuration from array list of config files
-**Example 1:**
+### Import configuration from array list of config files
+
+### **Example 1: Import configs from a managed config folder**
+
 ```
   ModuleInstallerFactory::importConfigsFromList('varbase_admin', 
   [
@@ -116,15 +133,19 @@ At this point any hook or event subscriber will be processed after the listed mo
   ],
   'config/managed');
 ```
-#### Arguments:
+
+### **Arguments for** importConfigsFromList method**:**
+
 * `String` **$moduleName:** The machine name for the module.
 * `Array` **$listOfConfigFiles:** The list of config files.
 * `String` **$configDirectory:** The config directory which to partial import the list from.
 
-It could be used in some cases to change the default View for the Content or People with multilingual sites or extra filters by other modules.
-It is important which managing the `Assemble components and install` installation step.
+It could be used in some cases to change the default View for the Content or People with multilingual sites or extra filters by other modules. It is important which manage the `Assemble components and install` installation step.
 
-**Example 2:** Having a custom config for a disabled module, which it will be Enabled and Disabled many times with development and deployments, but the need to have the basic extra change for config over the default settings or configs for the used module.
+### **Example 2: In Use Import of Configs**&#x20;
+
+Having a custom config for a disabled module, which will be Enabled and Disabled many times with development and deployments, but they need to have the basic extra change for config over the default settings or configs for the used module.
+
 ```
 /**
  * Implements hook_modules_installed().
