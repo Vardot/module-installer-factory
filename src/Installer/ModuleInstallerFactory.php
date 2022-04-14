@@ -85,7 +85,7 @@ class ModuleInstallerFactory {
       }
     }
 
-    if (count($modulesWeight) > 0)
+    if (count($modulesWeight) > 0) {
       $newWeight = max($modulesWeight) + 1;
 
       if (function_exists('module_set_weight')) {
