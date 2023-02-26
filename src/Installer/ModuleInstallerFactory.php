@@ -190,7 +190,7 @@ class ModuleInstallerFactory {
             if (isset($permissionFileData['id'])
               && is_string($permissionFileData['id'])
               && $permissionFileData['id'] != ''
-              && in_array($permissionFileData['id'], $roles)
+              && isset($roles[$permissionFileData['id']])
               && isset($permissionFileData['permissions'])
               && is_array($permissionFileData['permissions'])
               && count($permissionFileData['permissions']) > 0) {
