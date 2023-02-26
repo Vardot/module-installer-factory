@@ -50,7 +50,7 @@ class ModuleInstallerFactory {
   /**
    * Set the weight of the module after installation of list of modules.
    * 
-   * To make sure that any hook or event subscriber workes after all used modules.
+   * To make sure that any hook or event subscriber workers after all used modules.
    *
    * @param string $moduleName
    *   The machine name for the module.
@@ -160,4 +160,49 @@ class ModuleInstallerFactory {
       }
     }
   }
+
+  /**
+   * Add Permissions for user roles from scanned directory.
+   *
+   * @param string $moduleName
+   *   The machine name for the module.
+   * @param string $permissionsDirectory
+   *   The permissions directory.
+   * @return void
+   */
+  public static function addPermissions(string $moduleName, string $permissionsDirectory = 'config/permissions') {
+    $modulePath = \Drupal::service('module_handler')->getModule($moduleName)->getPath();
+    $permissionsDirectoryPath = $modulePath . '/' . $permissionsDirectory;
+
+    if (is_dir($permissionsDirectoryPath)) {
+      // Scan all permissions in the "config/permissions" folder.
+      $permissionFiles = \Drupal::service('file_system')->scanDirectory($permissionsDirectoryPath, '/.*/');
+      if (isset($permissionFiles) && is_array($permissionFiles)) {
+
+        $roles = \Drupal::entityTypeManager()->getStorage('user_role')->loadMultiple();
+
+        foreach ($permissionFiles as $permissionFile) {
+          $permissionImportFile = DRUPAL_ROOT . '/' . $permissionFile->uri;
+          if (file_exists($permissionImportFile)) {
+            $permissionFileContent = file_get_contents($permissionImportFile);
+            $permissionFileData = (array) Yaml::parse($permissionFileContent);
+
+            if (isset($permissionFileData['id'])
+              && is_string($permissionFileData['id'])
+              && $permissionFileData['id'] != ''
+              && in_array($permissionFileData['id'], $roles)
+              && isset($permissionFileData['permissions'])
+              && is_array($permissionFileData['permissions'])
+              && count($permissionFileData['permissions']) > 0) {
+
+              foreach($permissionFileData['permissions'] as $permission) {
+                $roles[$permissionFileData['id']]->grantPermission($permission);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
 }
