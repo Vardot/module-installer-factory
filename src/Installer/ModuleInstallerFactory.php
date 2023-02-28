@@ -198,6 +198,8 @@ class ModuleInstallerFactory {
               foreach($permissionFileData['permissions'] as $permission) {
                 $roles[$permissionFileData['id']]->grantPermission($permission);
               }
+
+              $roles[$permissionFileData['id']]->save();
             }
           }
         }
