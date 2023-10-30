@@ -6,6 +6,9 @@ use Drupal\Core\Config\FileStorage;
 use Drupal\Core\Config\InstallStorage;
 use Drupal\Core\Config\StorageInterface;
 use Symfony\Component\Yaml\Yaml;
+use Drupal\Core\Config\Entity\ConfigEntityUpdater;
+use Drupal\Core\StringTranslation\PluralTranslatableMarkup;
+use Drupal\user\Entity\Role;
 
 /**
  * Module Installer Factory.
@@ -205,6 +208,48 @@ class ModuleInstallerFactory {
         }
       }
     }
+  }
+
+  /**
+   * Remove non-existent permissions.
+   *
+   * Developers are facing this issue while uninstalling a module with dynamic permissions.
+   * Cloned the ready function for Calculate role dependencies and remove non-existent permissions.
+   * https://git.drupalcode.org/project/drupal/-/blob/9.5.11/core/modules/user/user.post_update.php?ref_type=tags#L22
+   * Which was removed in Drupal 10 and deprecated in Drupal 9
+   * Use when upgrading with missing static or dynamic permissions.
+   */
+  function removeNoneExistentPermissions(&$sandbox = NULL) {
+    $cleaned_roles = [];
+    $existing_permissions = array_keys(\Drupal::service('user.permissions')
+      ->getPermissions());
+    \Drupal::classResolver(ConfigEntityUpdater::class)
+      ->update($sandbox, 'user_role', function (Role $role) use ($existing_permissions, &$cleaned_roles) {
+        $removed_permissions = array_diff($role->getPermissions(), $existing_permissions);
+        if (!empty($removed_permissions)) {
+          $cleaned_roles[] = $role->label();
+          \Drupal::logger('update')->notice(
+            'The role %role has had the following non-existent permission(s) removed: %permissions.',
+            [
+              '%role' => $role->label(),
+              '%permissions' => implode(', ', $removed_permissions),
+            ]
+          );
+          $permissions = array_intersect($role->getPermissions(), $existing_permissions);
+          $role->set('permissions', $permissions);
+          return TRUE;
+        }
+      });
+
+    if (!empty($cleaned_roles)) {
+      return new PluralTranslatableMarkup(
+        count($cleaned_roles),
+        'The role %role_list has had non-existent permissions removed. Check the logs for details.',
+        'The roles %role_list have had non-existent permissions removed. Check the logs for details.',
+        ['%role_list' => implode(', ', $cleaned_roles)]
+      );
+    }
+
   }
 
 }
