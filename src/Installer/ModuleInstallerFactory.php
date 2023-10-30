@@ -219,7 +219,7 @@ class ModuleInstallerFactory {
    * Which was removed in Drupal 10 and deprecated in Drupal 9
    * Use when upgrading with missing static or dynamic permissions.
    */
-  public static function removeNoneExistentPermissions(&$sandbox = NULL) {
+  public static function removeNoneExistentPermissions(?array &$sandbox = NULL): void {
     $cleaned_roles = [];
     $existing_permissions = array_keys(\Drupal::service('user.permissions')
       ->getPermissions());
