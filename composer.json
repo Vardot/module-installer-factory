@@ -17,7 +17,7 @@
     "source": "https://github.com/Vardot/module-installer-factory.git"
   },
   "require": {
-    "drupal/core": "~9 || ~10"
+    "drupal/core": "~9 || ~10 || ~11"
   },
   "extra": {
     "branch-alias": {
